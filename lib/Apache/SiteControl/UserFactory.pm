@@ -8,9 +8,10 @@ use Data::Dumper;
 use Apache2::SiteControl::User;
 use Crypt::CBC;
 
-our $VERSION = "0.48";
+our $VERSION = "1.0";
 
 our $engine;
+our $encryption_key;
 
 sub init_engine
 {
@@ -30,18 +31,19 @@ sub makeUser
    my $username = shift;
    my $password = shift;
    my @other_cred = @_;
-   my $sessiondir = $r->dir_config("AccessControllerSessions") || "/tmp";
-   my $lockdir = $r->dir_config("AccessControllerLocks") || "/tmp";
-   my $debug = $r->dir_config("AccessControllerDebug") || 0;
+   my $sessiondir = $r->dir_config("SiteControlSessions") || "/tmp";
+   my $lockdir = $r->dir_config("SiteControlLocks") || "/tmp";
+   my $debug = $r->dir_config("SiteControlDebug") || 0;
    my $savePassword = $r->dir_config("UserObjectSavePassword") || 0;
    my $cipher = $r->dir_config("UserObjectPasswordCipher") || "CAST5";
-   my $key = $r->dir_config("UserObjectPasswordKey") || "A not very secure key because the admin forgot to set it.";
+   my $key = $r->dir_config("UserObjectPasswordKey") || $encryption_key || "A not very secure key because the admin forgot to set it.";
    my $saveOther = $r->dir_config("UserObjectSaveOtherCredentials") || 0;
-   my $factory = $r->dir_config("AccessControllerUserFactory") || "Apache2::SiteControl::UserFactory";
+   my $factory = $r->dir_config("SiteControlUserFactory") || "Apache2::SiteControl::UserFactory";
    my $user = undef;
    my %session;
    my $usermap;
 
+   $r->log_error("encryption engine using key: $key") if $debug;
    init_engine($cipher, $key) if($savePassword);
 
    # Proper steps:
@@ -101,15 +103,16 @@ sub findUser
    my $this = shift;
    my $r = shift;
    my $ses_key = shift;
-   my $sessiondir = $r->dir_config("AccessControllerSessions") || "/tmp";
-   my $lockdir = $r->dir_config("AccessControllerLocks") || "/tmp";
-   my $debug = $r->dir_config("AccessControllerDebug") || 0;
+   my $sessiondir = $r->dir_config("SiteControlSessions") || "/tmp";
+   my $lockdir = $r->dir_config("SiteControlLocks") || "/tmp";
+   my $debug = $r->dir_config("SiteControlDebug") || 0;
    my $savePassword = $r->dir_config("UserObjectSavePassword") || 0;
    my $cipher = $r->dir_config("UserObjectPasswordCipher") || "CAST5";
-   my $key = $r->dir_config("UserObjectPasswordKey") || "A not very secure key because the admin forgot to set it.";
+   my $key = $r->dir_config("UserObjectPasswordKey") || $encryption_key || "A not very secure key because the admin forgot to set it.";
    my %session;
    my $user;
 
+   $r->log_error("encryption engine using key: $key") if $debug;
    init_engine($cipher, $key) if($savePassword);
 
    eval {
@@ -148,12 +151,12 @@ sub invalidate
    my $this = shift;
    my $r = shift;
    my $userobj = shift;
-   my $debug = $r->dir_config("AccessControllerDebug") || 0;
-   my $sessiondir = $r->dir_config("AccessControllerSessions") || "/tmp";
-   my $lockdir = $r->dir_config("AccessControllerLocks") || "/tmp";
+   my $debug = $r->dir_config("SiteControlDebug") || 0;
+   my $sessiondir = $r->dir_config("SiteControlSessions") || "/tmp";
+   my $lockdir = $r->dir_config("SiteControlLocks") || "/tmp";
    my %session;
 
-   if(!$userobj->isa("Apache::SiteControl::User") || !defined($userobj->{sessionid})) {
+   if(!$userobj->isa("Apache2::SiteControl::User") || !defined($userobj->{sessionid})) {
       $r->log_error("Invalid user object passed to saveAttribute. Cannot remove user.");
       return 0;
    }
@@ -180,12 +183,12 @@ sub saveAttribute
    my $r = shift;
    my $userobj = shift;
    my $name = shift;
-   my $debug = $r->dir_config("AccessControllerDebug") || 0;
-   my $sessiondir = $r->dir_config("AccessControllerSessions") || "/tmp";
-   my $lockdir = $r->dir_config("AccessControllerLocks") || "/tmp";
+   my $debug = $r->dir_config("SiteControlDebug") || 0;
+   my $sessiondir = $r->dir_config("SiteControlSessions") || "/tmp";
+   my $lockdir = $r->dir_config("SiteControlLocks") || "/tmp";
    my %session;
 
-   if(!$userobj->isa("Apache::SiteControl::User") || !defined($userobj->{sessionid})) {
+   if(!$userobj->isa("Apache2::SiteControl::User") || !defined($userobj->{sessionid})) {
       $r->log_error("Invalid user object passed to saveAttribute. Attribute not saved.");
       return 0;
    }
@@ -214,9 +217,9 @@ sub _getUsermap
 {
    my $this = shift;
    my $r = shift;
-   my $sessiondir = $r->dir_config("AccessControllerSessions") || "/tmp";
-   my $lockdir = $r->dir_config("AccessControllerLocks") || "/tmp";
-   my $debug = $r->dir_config("AccessControllerDebug") || 0;
+   my $sessiondir = $r->dir_config("SiteControlSessions") || "/tmp";
+   my $lockdir = $r->dir_config("SiteControlLocks") || "/tmp";
+   my $debug = $r->dir_config("SiteControlDebug") || 0;
    my %usermap;
 
    eval {
@@ -286,98 +289,134 @@ __END__
 
 =head1 NAME
 
-Apache::SiteControl::UserFactory - User factory/persistence
+Apache2::SiteControl::UserFactory - User factory/persistence
 
 =head1 DESCRIPTION
 
-This class is responsible for creating user objects (see Apache::SiteControl::User) and
-managing the interfacing of those objects with a persistent session store.  The
-default implementation uses Apache::Session::File to store the various
-attributes of the user to disk.
+This class is responsible for creating user objects (see
+Apache2::SiteControl::User) and managing the interfacing of those objects with a
+persistent session store.  The default implementation uses
+Apache::Session::File to store the various attributes of the user to disk.
 
 If you want to do your own user management, then you should leave the User
 class alone, and subclass only this factory. The following methods are
 required:
 
-   sub makeUser($$) - This method is called with the Apache Request object and
-the desired user name. It must create and return an instance of
-Apache::SiteControl::User (using new...See User), and store that information (along with
-the session key stored in cookie format in the request) in some sort of
-permanent storage.  This method is called in response to a login, so it should
-invalidate any existing session for the given user name (so that a user can be
-logged in only once).  This method must return the key to use as the browser
-session key, or undef if it could not create the user.
+=over 3
 
-   sub findUser($$) - This method is passed the apache request and the session
-key (which you defined in makeUser).  This method is called every time a
-"logged in" user makes a request. In other words the user objects are not
-persistent in memory (each request gets a new "copy" of the state). This method
-uses the session key (which was stored in a browser cookie) to figure out what
-user to restore. The implementation is required to look up the user by the
-session key, recreate a Apache::SiteControl::User object and return it. It must restore
-all user attributes that have been saved via saveAttribute (below). 
+=item makeUser($$) 
 
-   sub invalidate($$) - This method is passed the apache request object and a
-previously created user object. It should delete the user object from permanent
-store so that future request to find that user fails unless makeUser has been
-called to recreate it. The session ID (which you made up in makeUser) is
-available from $user->{sessionid}.
+This method is called with the Apache Request object, username, password, and
+all other credential_# fields from the login form.  It must create and return
+an instance of Apache2::SiteControl::User (using new...See User), and store that
+information (along with the session key stored in cookie format in the request)
+in some sort of permanent storage.  This method is called in response to a
+login, so it should invalidate any existing session for the given user name (so
+that a user can be logged in only once).  This method must return the key to
+use as the browser session key, or undef if it could not create the user.
 
-   sub saveAttribute($$$) - This method is automatically called whenever a user 
-has a new attribute value. The incoming arguments are the apache request, the
-user object, and the name of the attribute to save (you can read it with
-$user->getAttribute($name)). This method must save the attribute in a such a
-way that later calls to findUser will be able to restore the attribute to the
-user object that is created. The session id you created for this user (in
-makeUser) is available in $user->{sessionid}.
+=item findUser($$) 
+
+This method is passed the apache request and the session key (which you defined
+in makeUser).  This method is called every time a "logged in" user makes a
+request. In other words the user objects are not persistent in memory (each
+request gets a new "copy" of the state). This method uses the session key
+(which was stored in a browser cookie) to figure out what user to restore. The
+implementation is required to look up the user by the session key, recreate a
+Apache2::SiteControl::User object and return it. It must restore all user
+attributes that have been saved via saveAttribute (below). 
+
+=item invalidate($$) 
+
+This method is passed the apache request object and a previously created user
+object. It should delete the user object from permanent store so that future
+request to find that user fails unless makeUser has been called to recreate it.
+The session ID (which you made up in makeUser) is available from
+$user->{sessionid}.
+
+=item saveAttribute($$$)  
+
+This method is automatically called whenever a user has a new attribute value.
+The incoming arguments are the apache request, the user object, and the name of
+the attribute to save (you can read it with $user->getAttribute($name)). This
+method must save the attribute in a such a way that later calls to findUser
+will be able to restore the attribute to the user object that is created. The
+session id you created for this user (in makeUser) is available in
+$user->{sessionid}.
+
+=back
 
 =head1 Apache Config Directives
 
-   AccessControllerDebug  (default 0): Debug mode
+The following is a list of configuration variables that can be set with
+apache's PerlSetVar to configure the behavior of this class:
 
-   AccessControllerLocks  (default /tmp): Where the locks are stored
+=over 3
 
-   AccessControllerSessions (default /tmp): Where the session data is stored
+=item  SiteControlDebug  (default 0): 
 
-   AccessControllerUserFactory (default: Apache::SiteControl::UserFactory): The module
+Debug mode
 
-   UserObjectSaveOtherCredentials (default: 0): Indicates that other form data
-      from the login screen (credential_2, credential_3, etc.) should be saved
-      in the session data. The keys will be credential_2, etc.  name of the
-      user factory to use when making user objects. These are useful if your
-      web application has other login choices (i.e. service, database, etc.)
-      that you need to know about at login.
+=item  SiteControlLocks  (default /tmp): 
 
-   UserObjectSavePassword (default 0): Indicates that the password should be
-      saved in the local session data, so that it is available to other parts
-      of the web app (and not just the auth system). This might be necessary if
-      you are logging the user in and out of services on the back end (like in
-      webmail and database apps).
+Where the locks are stored
 
-   UserObjectPasswordCipher (default CAST5): The CBC cipher used for encrypting
-      the user passwords in the session files (See Crypt::CBC for info on
-      allowed ciphers...this value is passed directly to Crypt::CBC->new). If
-      you are saving user passwords, they will be encrypted when stored in the
-      apache session files. This gives a little bit of added security, and
-      makes the apache config the only sensitive file (since that is where you
-      configure the key itself) instead of every random session file that is
-      laying around on disk. Unfortunately, I have not found a consistent
-      way to initialize this from a random source that I like, since web apps
-      often run in mulitple separate processes. This is on the TODO list. For
-      now, see UserObjectPasswordKey.
+=item  SiteControlSessions (default /tmp): 
+
+Where the session data is stored
+
+=item  SiteControlUserFactory (default: Apache2::SiteControl::UserFactory)
+
+An implementation like this module.
+
+=item  UserObjectSaveOtherCredentials (default: 0)
+
+Indicates that other form data from the login screen (credential_2,
+credential_3, etc.) should be saved in the session data. The keys will be
+credential_2, etc.  name of the user factory to use when making user objects.
+These are useful if your web application has other login choices (i.e. service,
+database, etc.) that you need to know about at login.
+
+=item  UserObjectSavePassword (default 0)
+
+Indicates that the password should be saved in the local session data, so that
+it is available to other parts of the web app (and not just the auth system).
+This might be necessary if you are logging the user in and out of services on
+the back end (like in webmail and database apps).
+
+=item  UserObjectPasswordCipher (default CAST5)
+
+The CBC cipher used for encrypting the user passwords in the session files (See
+Crypt::CBC for info on allowed ciphers...this value is passed directly to
+Crypt::CBC->new). If you are saving user passwords, they will be encrypted when
+stored in the apache session files. This gives a little bit of added security,
+and makes the apache config the only sensitive file (since that is where you
+configure the key itself) instead of every random session file that is laying
+around on disk. 
       
-   UserObjectPasswordKey: The key to use for encryption of the passwords in the
-      session files. See UserObjectPasswordCipher above.
+There is a global variable in this package called $encryption_key, which will
+be used if this variable is not set. The suggested method is to set the
+encryption key during server startup using a random value (i.e. from
+/dev/random), so that all server forks will inherit the value.
+      
+=item  UserObjectPasswordKey
+
+The key to use for encryption of the passwords in the session files. See
+UserObjectPasswordCipher above.
+
+=back
 
 =head1 SEE ALSO
 
-Apache::SiteControl::User, Apache::SiteControl::PermissionManager, Apache::SiteControl::Rule,
-Apache::SiteControl::AccessController
+Apache2::SiteControl::User, Apache::SiteControl::PermissionManager,
+Apache2::SiteControl::Rule, Apache::SiteControl
 
 =head1 AUTHOR
 
 This module was written by Tony Kay, E<lt>tkay@uoregon.eduE<gt>.
 
 =head1 COPYRIGHT AND LICENSE
+
+Apache2::SiteControl is covered by the GPL.
 
 =cut

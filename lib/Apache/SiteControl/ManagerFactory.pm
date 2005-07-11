@@ -6,7 +6,7 @@ use warnings;
 use Carp;
 use Carp::Assert;
 
-our $VERSION = "0.48";
+our $VERSION = "1.0";
 
 sub getPermissionManager
 {
@@ -19,8 +19,8 @@ __END__
 
 =head1 NAME
 
-Apache2::SiteControl::ManagerFactory - An abstract base class to use as a pattern for
-custom PermissionManager production.
+Apache2::SiteControl::ManagerFactory - An abstract base class to use as a
+pattern for custom PermissionManager production.
 
 =head1 DESCRIPTION
 
@@ -52,7 +52,7 @@ sub getPermissionManager
 
 =head1 SEE ALSO
 
-Apache2::SiteControl::PermissionManager, Apache2::SiteControl::Rule
+Apache2::SiteControl::PermissionManager, Apache::SiteControl::Rule
 
 =head1 AUTHOR
 

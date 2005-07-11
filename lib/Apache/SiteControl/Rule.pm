@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = "0.48";
+our $VERSION = "1.0";
 
 sub new {
    my $proto = shift;
@@ -79,13 +79,13 @@ access logic. Rules can choose to grant or deny a request.
    1;
 
 The PermissionManager will only give permission if I<at least> one rule grants
-permission, I<and> no rule denies it. 
+permission, I<and no> rule denies it. 
 
 It is important that your rules never grant or deny a request they do not
-understand, so it is a good idea to use assertions or type checking to prevent
-strangeness. B<Assertions should not be used> if you expect different rules to
-accept different resource types or user types, since each rule is used on every
-access request.
+understand, so it is a good idea to use type checking to prevent strangeness.
+B<Assertions should not be used> if you expect different rules to accept
+different resource types or user types, since each rule is used on every access
+request.
 
 =head1 EXPORT
 
@@ -93,8 +93,8 @@ None by default.
 
 =head1 SEE ALSO
 
-Apache2::SiteControl::UserFactory, Apache2::SiteControl::ManagerFactory,
-Apache2::SiteControl::PermissionManager, Apache2::SiteControl::AccessController
+Apache2::SiteControl::UserFactory, Apache::SiteControl::ManagerFactory,
+Apache2::SiteControl::PermissionManager, Apache::SiteControl
 
 =head1 AUTHOR
 

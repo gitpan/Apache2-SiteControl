@@ -1,6 +1,13 @@
-June 30, 2005: Version 0,48
-   - Branched an Apache2::SiteControl to address incompatibilities with
-     mod_perl2
+July 8, 2005: Version 1.0
+   - Added code so that session encryption key can be set by external code.
+     This allows a random, in-memory key to be used instead of a static one
+     that can be compromised by reading a config file. 
+   - INCOMPATIPLE NAME CHANGE: Changed AccessController to Apache::SiteControl.
+     This makes more sense in the CPAN sense, and will help with installation
+     and version checking. See README.UPGRADING_TO_1.0.
+   - The sample code should work, but it is untested. (Apache2::SiteControl is
+     not used by the author. It is maintained by request from other users who
+     do use it.)
 
 June 14, 2005: Version 0.46
    - Added encryption when saving passwords to session files. Adds a little

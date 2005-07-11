@@ -9,15 +9,15 @@ use Authen::Radius;
 #use Apache2::RequestRec;
 #use APR::SockAddr;
 
-our $VERSION = "0.48";
+our $VERSION = "1.0";
 
 sub check_credentials
 {
    my $r    = shift;  # Apache request object
    my $username = shift;
    my $password = shift;
-   my $host = $r->dir_config("RadiusAccessControllerHost") || "localhost";
-   my $secret = $r->dir_config("RadiusAccessControllerSecret") || "unknown";
+   my $host = $r->dir_config("RadiusSiteControlHost") || "localhost";
+   my $secret = $r->dir_config("RadiusSiteControlSecret") || "unknown";
    my $radius;
 
    # Get my IP address to pass as the
@@ -27,7 +27,7 @@ sub check_credentials
    #my $sockaddr = $c->local_addr if defined($c);
    my $nas_ip_address = undef; # $sockaddr->ip_get if defined($sockaddr);
 
-   $r->log_error("WARNING: Shared secret is not set. Use RadiusAccessControllerSecret in httpd.conf") if $secret eq "unknown";
+   $r->log_error("WARNING: Shared secret is not set. Use RadiusSiteControlSecret in httpd.conf") if $secret eq "unknown";
 
    $radius = new Authen::Radius(Host => $host, Secret => $secret);
    if(!$radius) {
@@ -55,7 +55,7 @@ In Apache/mod_perl's configuration:
 
 =over 4
 
-   PerlModule Apache2::SiteControl::AccessController
+   PerlModule Apache2::SiteControl
 
    <Location /sample>
    ...
@@ -65,15 +65,15 @@ In Apache/mod_perl's configuration:
 
    <FilesMatch "\.pl$">
     ...
-    PerlSetVar RadiusAccessControlHost "localhost"
-    PerlSetVar RadiusAccessControllerSecret "mysecret"
+    PerlSetVar RadiusSiteControlHost "localhost"
+    PerlSetVar RadiusSiteControlSecret "mysecret"
     ...
    </FilesMatch>
 
    <Location /SampleLogin>
     ...
-      PerlSetVar RadiusAccessControlHost "localhost"
-      PerlSetVar RadiusAccessControllerSecret "mysecret"
+      PerlSetVar RadiusSiteControlHost "localhost"
+      PerlSetVar RadiusSiteControlSecret "mysecret"
     ...
    </Location>
 
@@ -81,11 +81,11 @@ In Apache/mod_perl's configuration:
 
 =head1 DESCRIPTION
 
-Apache2::SiteControl::Radius uses Authen::Radius to do the actual authentication of
-login attempts for the SiteControl system. See the AccessController
-documentation for a complete apache configuration example. The synopsis above
-shows the configuration parameters for the radius module only, which is not a
-stand-alone thing.
+Apache2::SiteControl::Radius uses Authen::Radius to do the actual authentication
+of login attempts for the SiteControl system. See the SiteControl documentation
+for a complete apache configuration example. The synopsis above shows the
+configuration parameters for the radius module only, which is not a stand-alone
+thing.
 
 The proper variables for the apache configuration of this modules are shown in
 the synopsis above. You must set the radius host and shared secret in all
@@ -93,7 +93,7 @@ sections that will use the SiteControl system for authentication.
 
 =head1 SEE ALSO
 
-Apache2::SiteControl::AccessController
+Apache2::SiteControl
 
 =head1 AUTHOR
 

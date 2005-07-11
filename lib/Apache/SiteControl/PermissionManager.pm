@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = "0.48";
+our $VERSION = "1.0";
 
 sub new {
    my $proto = shift;
@@ -153,7 +153,7 @@ for the rule for protecting salaries might look like:
       return 0;
    }
 
-Then in another part of the program (i.e. your subclass of ManagerFactory):
+Then in your subclass of ManagerFactory:
 
    use SalaryViewRule;
 
@@ -184,8 +184,8 @@ properly applied.
 
 =head1 SEE ALSO
 
-Apache2::SiteControl::Rule, Apache2::SiteControl::ManagerFactory, Apache2::SiteControl::UserFactory,
-Apache2::SiteControl::AccessController
+Apache2::SiteControl::Rule, Apache::SiteControl::ManagerFactory,
+Apache2::SiteControl::UserFactory, Apache::SiteControl
 
 =head1 AUTHOR
 

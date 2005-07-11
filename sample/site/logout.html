@@ -12,7 +12,7 @@
 </HTML>
 
 <%init>
-my $user = Apache2::SiteControl::AccessController::getCurrentUser($r);
+my $user = Apache2::SiteControl->getCurrentUser($r);
 my $success = 0;
 
 if(defined($user) && $user->isa("Apache2::SiteControl::User")) {

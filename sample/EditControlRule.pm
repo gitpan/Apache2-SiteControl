@@ -1,4 +1,4 @@
-package samples::site::EditControlRule;
+package EditControlRule;
 
 use Apache2::SiteControl::Rule;
 
