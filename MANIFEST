@@ -1,14 +1,14 @@
 Changes
 docs/apache
 docs/README
-lib/Apache/SiteControl.pm
-lib/Apache/SiteControl/GrantAllRule.pm
-lib/Apache/SiteControl/ManagerFactory.pm
-lib/Apache/SiteControl/PermissionManager.pm
-lib/Apache/SiteControl/Radius.pm
-lib/Apache/SiteControl/Rule.pm
-lib/Apache/SiteControl/User.pm
-lib/Apache/SiteControl/UserFactory.pm
+lib/Apache2/SiteControl.pm
+lib/Apache2/SiteControl/GrantAllRule.pm
+lib/Apache2/SiteControl/ManagerFactory.pm
+lib/Apache2/SiteControl/PermissionManager.pm
+lib/Apache2/SiteControl/Radius.pm
+lib/Apache2/SiteControl/Rule.pm
+lib/Apache2/SiteControl/User.pm
+lib/Apache2/SiteControl/UserFactory.pm
 Makefile.PL
 MANIFEST			This list of files
 META.yml

@@ -6,15 +6,15 @@ installation smoother with CPAN.
 To upgrade:
 
 1) Edit all of your modules that depend on 
-   Apache::SiteControl::AccessController, and change them to use 
-   Apache::SiteControl.
+   Apache2::SiteControl::AccessController, and change them to use 
+   Apache2::SiteControl.
 2) Make the same change in all of your pages. i.e.:
 
-   $user = Apache::SiteControl::AccessController->getPermissionManager($r)
+   $user = Apache2::SiteControl::AccessController->getPermissionManager($r)
 
    becomes:
 
-   $user = Apache::SiteControl->getPermissionManager($r)
+   $user = Apache2::SiteControl->getPermissionManager($r)
 
    i.e. 
    
