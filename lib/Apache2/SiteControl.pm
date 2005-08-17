@@ -7,7 +7,7 @@ use Carp;
 use Apache2::AuthCookie;
 use Apache::Session::File;
 
-our $VERSION = "1.0";
+our $VERSION = "1.01";
 
 use base qw(Apache2::AuthCookie);
 
@@ -19,9 +19,9 @@ sub getCurrentUser
    my $r = shift;
    my $debug = $r->dir_config("SiteControlDebug") || 0;
    my $factory = $r->dir_config("SiteControlUserFactory") || "Apache2::SiteControl::UserFactory";
-   my $auth_type = $r->ap_auth_type;
+   my $auth_type = $r->auth_type;
    my $auth_name = $r->auth_name;
-   my ($ses_key) = ($r->header_in->{"Cookie"}) || "") =~ /$auth_type\_$auth_name=([^;]+)/;
+   my ($ses_key) = ($r->headers_in->{"Cookie"} || "") =~ /$auth_type\_$auth_name=([^;]+)/;
 
    $r->log_error("Session cookie: " . ($ses_key ? $ses_key:"UNSET")) if $debug;
    $r->log_error("Loading module $factory") if $debug;
