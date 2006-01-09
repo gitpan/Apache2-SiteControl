@@ -3,15 +3,13 @@ use ExtUtils::MakeMaker;
 # the contents of the Makefile that is written.
 WriteMakefile(
     NAME                => 'Apache2::SiteControl',
-    VERSION             => '1.01',
+    VERSION             => '1.02',
     PREREQ_PM           => { Apache2::AuthCookie => 3.08,
                              Apache::Session::File => 1.54,
                              Apache2::Request => 2.05,
                              Crypt::CBC => 2.14,
                              Crypt::CAST5 => 0.04,
                              Authen::Radius => 0.10,
-                             Carp::Assert => 0.18,
-                             Data::Dumper => 2.101
                            }, # e.g., Module::Name => 1.1
     ABSTRACT            => 'An object-oriented, fine-grained site access control facility',
     AUTHOR              => 'Tony Kay <tkay@uoregon.edu>',

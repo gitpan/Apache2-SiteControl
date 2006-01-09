@@ -42,6 +42,7 @@ sub makeUser
    my $user = undef;
    my %session;
    my $usermap;
+   my $session_removed = 0;
 
    $r->log_error("encryption engine using key: $key") if $debug;
    init_engine($cipher, $key) if($savePassword);
@@ -56,6 +57,7 @@ sub makeUser
       $r->log_error("Login process got user map: " . Dumper($usermap)) if $debug;
       if(defined($usermap) && defined($usermap->{$username})) {
          $r->log_error("$username is logging in, and already had a session $usermap->{$username}{_session_id}. Removing old session.");
+         $session_removed = 1;
          eval {
             tie %session, 'Apache::Session::File', 
                $usermap->{$username}{_session_id}, {
@@ -77,6 +79,7 @@ sub makeUser
       $session{username} = $username;
       $session{manager} = $factory;
       $session{attr_password} = $engine->encrypt($password) if($savePassword);
+      $session{attr_session_removed} = $session_removed;
       if(@other_cred && $saveOther) {
          my $i = 2;
          for my $c (@other_cred) {
