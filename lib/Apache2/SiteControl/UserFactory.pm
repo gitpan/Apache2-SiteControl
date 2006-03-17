@@ -8,8 +8,6 @@ use Data::Dumper;
 use Apache2::SiteControl::User;
 use Crypt::CBC;
 
-our $VERSION = "1.0";
-
 our $engine;
 our $encryption_key;
 

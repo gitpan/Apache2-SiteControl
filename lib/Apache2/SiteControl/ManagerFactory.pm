@@ -6,8 +6,6 @@ use warnings;
 use Carp;
 use Carp::Assert;
 
-our $VERSION = "1.0";
-
 sub getPermissionManager
 {
    croak "Attempt to call abstract method getPermissionManager";

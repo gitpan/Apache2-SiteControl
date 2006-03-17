@@ -7,7 +7,7 @@ use Carp;
 use Apache2::AuthCookie;
 use Apache::Session::File;
 
-our $VERSION = "1.02";
+our $VERSION = "1.03";
 
 use base qw(Apache2::AuthCookie);
 

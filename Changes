@@ -1,3 +1,6 @@
+Mar 17, 2006: Version 1.03
+   - Removed Radius from dependency list
+
 July 8, 2005: Version 1.0
    - Added code so that session encryption key can be set by external code.
      This allows a random, in-memory key to be used instead of a static one

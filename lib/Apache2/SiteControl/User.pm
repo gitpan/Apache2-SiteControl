@@ -5,8 +5,6 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = "1.0";
-
 # This object represents a transient view of a persistent user. The UserManager
 # is responsible for loading/saving these things.
 sub new($$$$) {
