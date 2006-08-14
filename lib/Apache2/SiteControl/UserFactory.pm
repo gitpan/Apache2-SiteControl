@@ -31,6 +31,7 @@ sub makeUser
    my @other_cred = @_;
    my $sessiondir = $r->dir_config("SiteControlSessions") || "/tmp";
    my $lockdir = $r->dir_config("SiteControlLocks") || "/tmp";
+   my $mapdir = $r->dir_config("SiteControlUsermap") || "";
    my $debug = $r->dir_config("SiteControlDebug") || 0;
    my $savePassword = $r->dir_config("UserObjectSavePassword") || 0;
    my $cipher = $r->dir_config("UserObjectPasswordCipher") || "CAST5";
@@ -51,28 +52,21 @@ sub makeUser
    # 3. Return the new user object.
    $r->log_error("Making user object for $username.") if $debug;
    eval {
-      $usermap = $this->_getUsermap($r);
-      $r->log_error("Login process got user map: " . Dumper($usermap)) if $debug;
-      if(defined($usermap) && defined($usermap->{$username})) {
-         $r->log_error("$username is logging in, and already had a session $usermap->{$username}{_session_id}. Removing old session.");
+      if($mapdir && -l "$mapdir/$username") {
+         $r->log_error("$username is logging in, and already had a session. Removing old session.");
          $session_removed = 1;
-         eval {
-            tie %session, 'Apache::Session::File', 
-               $usermap->{$username}{_session_id}, {
-                  Directory => $sessiondir,
-                  LockDirectory => $lockdir
-               };
-            tied(%session)->delete;
-         };
-         if($@) {
-            $r->log_error("Could not delete old session: $@");
-         }
+         my $sid = readlink "$mapdir/$username";
+         unlink "$mapdir/$username"; # Remove the link
+         unlink "$sid"; # Remove the session file
       }
       tie %session, 'Apache::Session::File', undef, 
          {
             Directory => $sessiondir,
             LockDirectory => $lockdir
          };
+      # Remember the username to session mapping.
+      $r->log_error("Making symlink from $sessiondir/$session{_session_id} to $mapdir/$username") if($mapdir);
+      symlink "$sessiondir/" . $session{_session_id}, "$mapdir/$username" if($mapdir);
       $user = new Apache2::SiteControl::User($username, $session{_session_id}, $factory);
       $session{username} = $username;
       $session{manager} = $factory;
@@ -212,78 +206,6 @@ sub saveAttribute
    }
 }
 
-# Internal method for this implementation (using session files)
-# in: Apache request object
-sub _getUsermap
-{
-   my $this = shift;
-   my $r = shift;
-   my $sessiondir = $r->dir_config("SiteControlSessions") || "/tmp";
-   my $lockdir = $r->dir_config("SiteControlLocks") || "/tmp";
-   my $debug = $r->dir_config("SiteControlDebug") || 0;
-   my %usermap;
-
-   eval {
-   my %session;
-
-   my @files = <$sessiondir/[0-9a-f]*>;
-   my @sessions = grep { s#^.*/([^/]*)$#$1# } @files;
-   my $username;
-
-   $r->log_error("Current sessions: @sessions") if $debug;
-   for my $id (@sessions)
-   {
-      next if $id !~ /^[0-9a-f]{20,}/;
-      tie %session, 'Apache::Session::File', $id, {
-         Directory => $sessiondir,
-         LockDirectory => $lockdir
-         };
-      $username = $session{username};
-      if(!defined($username)) {
-         $r->log_error("Session $session{_session_id} does not have a username...deleting");
-         tied(%session)->delete;
-         next;
-      }
-      if(defined($usermap{$username})) {
-         # last modify time of session we saw
-         my $timea = (stat("$sessiondir/$usermap{$username}{_session_id}"))[9];
-         # last modify time of this session
-         my $timeb = (stat("$sessiondir/$id"))[9];
-         $r->log_error("User $username has duplicate session! Expiring old session");
-         if($timea < $timeb) {
-            # The one we saw earlier is older. Delete it.
-            untie %session;
-            tie %session, 'Apache::Session::File', 
-               $usermap{$username}{_session_id}, {
-               Directory => $sessiondir,
-               LockDirectory => $lockdir
-               };
-            tied(%session)->delete;
-            redo; # redo this loop so we record the more better one ;)
-         } else {
-            # The one we are looking at is older...delete it and go on.
-            tied(%session)->delete;
-            next;
-         }
-      }
-      $usermap{$username} = {};
-      # Copy the session into our usermap
-      for my $key (keys %session) {
-         $usermap{$username}{$key} = $session{$key};
-      }
-      untie %session;
-   }
-   $r->log_error("Current user map : " .  Dumper(\%usermap)) if $debug;
-
-   };
-   if($@) {
-      $r->log_error("Failure in _getUsermap: $@");
-      return undef;
-   }
-
-   return { %usermap };
-}
-
 1;
 
 __END__
@@ -365,6 +287,12 @@ Where the locks are stored
 =item  SiteControlSessions (default /tmp): 
 
 Where the session data is stored
+
+=item  SiteControlUsermap (default none): 
+
+Where the usernames are mapped to session files. Required if you want multiple
+session detection. If unset a single userid can be used to log in multiple
+times simultaneously.
 
 =item  SiteControlUserFactory (default: Apache2::SiteControl::UserFactory)
 
