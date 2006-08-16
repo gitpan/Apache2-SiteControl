@@ -148,6 +148,7 @@ sub invalidate
    my $userobj = shift;
    my $debug = $r->dir_config("SiteControlDebug") || 0;
    my $sessiondir = $r->dir_config("SiteControlSessions") || "/tmp";
+   my $mapdir = $r->dir_config("SiteControlUsermap") || "";
    my $lockdir = $r->dir_config("SiteControlLocks") || "/tmp";
    my %session;
 
@@ -158,6 +159,7 @@ sub invalidate
 
    $r->log_error("Logging out user: " . $userobj->getUsername) if $debug;
    eval {
+      unlink "$mapdir/" . $userobj->getUsername; # Remove the MSD link
       tie %session, 'Apache::Session::File', $userobj->{sessionid}, {
          Directory => $sessiondir,
          LockDirectory => $lockdir
